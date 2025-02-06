@@ -1,0 +1,5 @@
+*.env
+start.bat
+start.bat — ярлык.lnk
+__pycache__/
+cogs/__pycache__/
