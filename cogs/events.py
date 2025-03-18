@@ -1,19 +1,17 @@
 import discord
 from discord.ext import commands
 from logger import logger
-
-#аналотдел-основной ID: 1002897000573960202
-#Mercher ID = 496954299243560960
-#Ламповая Флудилка ID = 695673593618497678
-
+import globals
+import random
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.content == 'ping':
-            await message.channel.send('pong')
+        if message.content == f"""<@{globals.MERCHER_ID}>""":
+            response = random.choice(globals.MERCHER_PHRASES)
+            await message.channel.send(response)
             
     @commands.Cog.listener()
     async def on_error(self, event, *args, **kwargs):
@@ -26,13 +24,12 @@ class Events(commands.Cog):
         channel_id = 1002897000573960202
         channel = self.bot.get_channel(channel_id)
         if channel:
-            #await channel.send("<@496954299243560960>, как дела?")
             await channel.send("Бот запущен")
         logger.ingo(f"Bot started working as {self.bot.user}")
 
     @commands.Cog.listener()
     async def on_command_error(seld, ctx, error):
-        if isinstance (error, commands.CommandNotfound):
+        if isinstance (error, commands.CommandNotFound):
             logger.warning (f"Неизвестная команда {ctx.message.content}")
             await ctx.send("Данной команды не существует.")
         elif isinstance(error, commands.MissingPermissions):

@@ -1,6 +1,9 @@
 import discord
 from discord.ext import commands
 from logger import logger
+import asyncio
+import sys
+import os
 
 class Maintenance(commands.Cog):
     def __init__(self, bot):
@@ -23,6 +26,21 @@ class Maintenance(commands.Cog):
             
         await interaction.response.send_message(f"Режим техобслуживания {status}", ephemeral=True)
     
+    @commands.hybrid_command(name="shutdown", description="Выключение бота")
+    @commands.has_role("Supreme Intelligence")
+    async def shutdown(self, ctx):
+        await ctx.send("Выключение бота")
+        await asyncio.sleep(10)
+        await self.bot.close()
+
+
+    @commands.hybrid_command(name="restart", description="Перезапуск бота")
+    @commands.has_role("Supreme Intelligence")
+    async def restart(self, ctx: commands.Context):
+        await ctx.send("Перезапуск систем... ")
+        python = sys.executable  
+        os.execv(python, [python] + sys.argv) 
+
     @commands.Cog.listener()
     async def on_command(self, ctx):
         logger.info (f"Команда '{ctx.command}' вызвана пользователем {ctx.author}, канал: {ctx.channel}")
@@ -37,8 +55,15 @@ class Maintenance(commands.Cog):
              if not interaction.response.is_done():
                 await interaction.response.defer()  
                 await interaction.followup.send("Бот в режиме тех. обслуживания.", ephemeral=True)
-        
-        
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if member == self.bot.user:
+            if before.channel is None and after.channel is not None:
+                logger.info(f"Бот подключился к голосовому каналу {after.channel.name}")
+            elif before.channel is not None and after.channel is None:
+                logger.info(f"Бот отключился от канала {before.channel.name}")
+
 async def setup(bot):
    await bot.add_cog(Maintenance(bot)) 
    
