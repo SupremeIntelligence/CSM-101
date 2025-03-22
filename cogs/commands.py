@@ -77,23 +77,6 @@ class Commands(commands.Cog):
         await user.move_to(original_channel)
         await interaction.edit_original_response(content = f"Пользователь {user.mention} гулял в течение {duration} секунд.")
 
-    @discord.app_commands.command(name="join", description="Подключить бота к голосовому каналу")
-    @discord.app_commands.describe(channel="Выберите голосовой канал")
-    async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel):
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.disconnect()
-        await channel.connect()
-        await interaction.response.send_message(f"Начинаю запись и анализ аудиоданных в канале {channel.name}")
-
-    @discord.app_commands.command(name="leave", description="Отключить бота от голосового канала")
-    async def leave(self, interaction: discord.Interaction):
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.disconnect()
-            await interaction.response.send_message("Отключился от голосового канала.")
-        else:
-            await interaction.response.send_message("Бот не подключен к голосовому каналу.", ephemeral=True)
-
-
 async def setup(bot):
    await bot.add_cog(Commands(bot)) 
    

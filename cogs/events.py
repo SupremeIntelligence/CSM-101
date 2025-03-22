@@ -21,11 +21,10 @@ class Events(commands.Cog):
     #не работает
     @commands.Cog.listener()
     async def on_ready(self):
-        channel_id = 1002897000573960202
-        channel = self.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(globals.SYS_CHANNEL_ID)
         if channel:
             await channel.send("Бот запущен")
-        logger.ingo(f"Bot started working as {self.bot.user}")
+        logger.info(f"Bot started working as {self.bot.user}")
 
     @commands.Cog.listener()
     async def on_command_error(seld, ctx, error):

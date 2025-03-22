@@ -19,7 +19,7 @@ async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message("Hello World!", ephemeral=True)
     
 async def load_cogs():
-    cogs = ["cogs.commands", "cogs.events", "cogs.maintenance", "cogs.games"]
+    cogs = ["cogs.commands", "cogs.events", "cogs.maintenance", "cogs.games", "cogs.voice"]
     for cog in cogs:
         await bot.load_extension(cog)
     logger.info("Командные модули загружены")
