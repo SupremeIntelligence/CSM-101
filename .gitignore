@@ -4,5 +4,5 @@ start.bat
 start.bat.lnk
 __pycache__/
 cogs/__pycache__/
-logs.log
 .DS_Store
+logs.log
