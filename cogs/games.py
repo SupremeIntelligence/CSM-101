@@ -30,7 +30,7 @@ class Games(commands.Cog):
         await interaction.edit_original_response(content=f"<@{globals.users[winner_id].id}> - главный пидорас сервера.")
         globals.users[winner_id].wins += 1
         guild_info.save_users(globals.users)
-        logger.info(f"Игрок {globals.users[winner_id].username} ({globals.users[winner_id].id}) побеждает в игре pidor")
+        logger.info(f"Пользователь {globals.users[winner_id].username} ({globals.users[winner_id].id}) побеждает в игре pidor")
 
     @games.command(name="user-stats", description="Личная статистика")
     async def user_stats(self, interaction: discord.Interaction):

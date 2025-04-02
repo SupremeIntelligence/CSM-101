@@ -1,6 +1,8 @@
 *.env
+*.wav
 start.bat
-start.bat — ярлык.lnk
+start.bat.lnk
 __pycache__/
 cogs/__pycache__/
 logs.log
+.DS_Store
