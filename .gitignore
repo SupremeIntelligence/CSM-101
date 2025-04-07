@@ -4,5 +4,6 @@ start.bat
 start.bat.lnk
 __pycache__/
 cogs/__pycache__/
-.DS_Store
+transcrypts.txt
 logs.log
+.DS_Store

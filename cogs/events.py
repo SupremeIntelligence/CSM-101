@@ -60,5 +60,14 @@ class Events(commands.Cog):
             logger.error(f"Произошла неизвестная ошибка - Команда: {interaction.command}, пользователь: {interaction.user}, канал: {interaction.channel}")
             await interaction.response.send_message("Произошла неизвестная ошибка.", ephemeral=True)
 
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if member == self.bot.user:
+            if before.channel is None and after.channel is not None:
+                logger.info(f"Бот подключился к голосовому каналу {after.channel.name}")
+            elif before.channel is not None and after.channel is None:
+                logger.info(f"Бот отключился от канала {before.channel.name}")
 async def setup(bot):
     await bot.add_cog(Events(bot))
+    logger.info("Модуль ивентов загружен.")
+    

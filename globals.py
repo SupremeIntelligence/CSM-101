@@ -6,6 +6,11 @@ SUPREME_INTELLIGENCE_ID = 272060741954174987
 SYS_CHANNEL_ID = 1002897000573960202 #основной-аналотдел
 SERVER_ID = 551094222825193503
 JOKES_DATA_FILE = "jokes.txt"
+COG_MODULES = ["commands", 
+               "events", 
+               "maintenance", 
+               "games", 
+               "voice"]
 jokes = []
 MERCHER_PHRASES = [
     "Mercher — человек-загадка. Загадка, которую никто не хочет разгадывать.",

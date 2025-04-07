@@ -19,10 +19,9 @@ async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message("Hello World!", ephemeral=True)
     
 async def load_cogs():
-    cogs = ["cogs.commands", "cogs.events", "cogs.maintenance", "cogs.games", "cogs.voice"]
-    for cog in cogs:
-        await bot.load_extension(cog)
-    logger.info("Командные модули загружены")
+    for module in globals.COG_MODULES:
+        await bot.load_extension (f'cogs.{module}')
+    logger.info("Все командные модули загружены")
 
 async def set_activity():
     #server_emoji = discord.PartialEmoji(name="Witcher_Triss", id=856435197709123645)
@@ -48,8 +47,6 @@ async def on_ready():
     channel = bot.get_channel(channel_id)
     sys_channel = bot.get_channel(sys_channel_id)
     if channel:
-        pass
-        #await channel.send("<@496954299243560960>, как дела?")
         await sys_channel.send("Бот запущен")
     for guild in bot.guilds:
         logger.info(f"Бот {bot.user} работает на сервере: {guild.name} (ID: {guild.id})")

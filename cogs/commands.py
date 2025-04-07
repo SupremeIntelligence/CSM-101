@@ -3,6 +3,7 @@ from discord.ext import commands
 import asyncio
 import globals
 from joke import get_joke
+from logger import logger
 
 class Commands(commands.Cog):
     def __init__(self, bot):
@@ -79,6 +80,7 @@ class Commands(commands.Cog):
 
 async def setup(bot):
    await bot.add_cog(Commands(bot)) 
+   logger.info ("Основной командный модуль загружен.")
    
 
    
