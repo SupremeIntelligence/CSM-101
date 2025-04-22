@@ -43,10 +43,8 @@ async def on_ready():
     globals.jokes = load_jokes()
     logger.info("База анекдотов загружена")
     sys_channel_id = globals.SYS_CHANNEL_ID
-    channel_id = 695673593618497678
-    channel = bot.get_channel(channel_id)
     sys_channel = bot.get_channel(sys_channel_id)
-    if channel:
+    if sys_channel:
         await sys_channel.send("Бот запущен")
     for guild in bot.guilds:
         logger.info(f"Бот {bot.user} работает на сервере: {guild.name} (ID: {guild.id})")

@@ -1,11 +1,14 @@
 users = {}
-USER_DATA_FILE = "users.json"
+USER_DATA_FILE = "brain/users.json"
+WHISPER_MODELS_DIRECTORY = "/Users/supremeintelligence/IT/Whisper Models"
 LAMP_CHANNEL_ID = 695673593618497678
 MERCHER_ID = 496954299243560960
 SUPREME_INTELLIGENCE_ID = 272060741954174987
 SYS_CHANNEL_ID = 1002897000573960202 #основной-аналотдел
 SERVER_ID = 551094222825193503
-JOKES_DATA_FILE = "jokes.txt"
+JOKES_DATA_FILE = "brain/jokes.txt"
+MAIN_LOG_FILE = "logs/logs.log"
+VOICE_LOG_FILE = "logs/speechrecognition.log"
 COG_MODULES = ["commands", 
                "events", 
                "maintenance", 

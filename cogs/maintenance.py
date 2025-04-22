@@ -37,9 +37,10 @@ class Maintenance(commands.Cog):
     @commands.hybrid_command(name="restart", description="Перезапуск бота")
     @commands.has_role("Supreme Intelligence")
     async def restart(self, ctx: commands.Context):
-        await ctx.send("Перезапуск систем... ", ephemeral=True)
-        python = sys.executable  
+        python = sys.executable 
+        msg = await ctx.send("Перезапуск систем... ", ephemeral=True)
         os.execv(python, [python] + sys.argv) 
+        msg.edit (content="Бот перезапущен")
 
     COG_MODULES = [
         discord.app_commands.Choice(name="commands", value="commands"),

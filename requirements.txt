@@ -38,6 +38,10 @@ requests==2.32.3
 semantic-version==2.10.0
 setuptools==76.1.0
 setuptools-rust==1.11.0
+six==1.17.0
+SpeechRecognition==3.14.2
+standard-aifc==3.13.0
+standard-chunk==3.13.0
 sympy==1.13.1
 tiktoken==0.9.0
 torch==2.6.0
@@ -46,5 +50,8 @@ torchvision==0.21.0
 tqdm==4.67.1
 typing_extensions==4.12.2
 urllib3==2.3.0
+whisper==1.1.10
 yarg==0.1.10
 yarl==1.18.3
+coremltools
+ane_transformers

@@ -1,5 +1,5 @@
 import logging
-
+from globals import MAIN_LOG_FILE, VOICE_LOG_FILE
 def startLogging(name: str = "default", level = logging.DEBUG, filename: str = "default.log", CLI: bool = False) -> logging.Logger:
 
     logger = logging.getLogger(name)
@@ -12,7 +12,7 @@ def startLogging(name: str = "default", level = logging.DEBUG, filename: str = "
     
     if CLI:
         CLI_handler = logging.StreamHandler()
-        CLI_handler.setLevel(level)  # В консоли показываем только INFO и выше
+        CLI_handler.setLevel(level)                                   # В консоли показываем только INFO и выше
         CLI_handler.setFormatter(formatter)
         logger.addHandler(CLI_handler)
 
@@ -24,5 +24,5 @@ def startLogging(name: str = "default", level = logging.DEBUG, filename: str = "
 
     return logger
 
-logger = startLogging("Discord Bot", level=logging.INFO, filename="logs.log", CLI=True)
-sr_logger = startLogging("Speech Recognition", level=logging.DEBUG, filename="speechrecognition.log")
+logger = startLogging("Discord Bot", level=logging.INFO, filename=MAIN_LOG_FILE, CLI=True)
+sr_logger = startLogging("Speech Recognition", level=logging.DEBUG, filename=VOICE_LOG_FILE)

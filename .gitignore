@@ -6,4 +6,5 @@ __pycache__/
 cogs/__pycache__/
 transcrypts.txt
 logs.log
-.DS_Store
+logs/speechrecognition.log
+brain/jokes.txt
