@@ -8,11 +8,13 @@ class Events(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         if message.content == f"""<@{globals.MERCHER_ID}>""":
             response = random.choice(globals.MERCHER_PHRASES)
             await message.channel.send(response)
-            
+        elif message.content.strip() == message.guild.me.mention:
+            await message.channel.send ("Чего ты хочешь от меня, жалкий мешок с костями?")
+
     @commands.Cog.listener()
     async def on_error(self, event, *args, **kwargs):
         logger.error("Unexpected error")
@@ -24,7 +26,7 @@ class Events(commands.Cog):
         channel = self.bot.get_channel(globals.SYS_CHANNEL_ID)
         if channel:
             await channel.send("Бот запущен")
-        logger.info(f"Bot started working as {self.bot.user}")
+        logger.info(f"Bot started working as {self.bot.user}.")
 
     @commands.Cog.listener()
     async def on_command_error(seld, ctx, error):

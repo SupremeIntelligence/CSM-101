@@ -53,7 +53,7 @@ class Voice(commands.Cog):
     def speech_tracing(self) -> str:
         content = ["### Трассировка реплик: "]
         for t in self.transcripts:
-            content.append(f"> 👤 *{t["user"]}:* ```- {t["text"]}```")
+            content.append(f"> 👤 *{t['user']}:* ```- {t['text']}```")
         joined_content = "\n".join(content)
         return joined_content
 
