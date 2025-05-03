@@ -10,7 +10,7 @@ class Maintenance(commands.Cog):
         self.bot = bot
         self.bot.mode = False
 
-    @discord.app_commands.command(name="maintenance", description="Включает/выключает режим техобслуживания")
+    @discord.app_commands.command(name="maintenance", description="Включение/выключение режима техобслуживания")
     @discord.app_commands.describe(mode="Выберите режим")
     @discord.app_commands.checks.has_role("Supreme Intelligence")
     async def maintenance(self, interaction: discord.Interaction, mode: bool):

@@ -42,8 +42,7 @@ async def on_ready():
     await set_activity()
     globals.jokes = load_jokes()
     logger.info("База анекдотов загружена")
-    sys_channel_id = globals.SYS_CHANNEL_ID
-    sys_channel = bot.get_channel(sys_channel_id)
+    sys_channel = bot.get_channel(globals.SYS_CHANNEL_ID)
     if sys_channel:
         await sys_channel.send("Бот запущен")
     for guild in bot.guilds:

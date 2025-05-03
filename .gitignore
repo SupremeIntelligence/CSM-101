@@ -1,5 +1,6 @@
 *.env
 *.wav
+*.pt
 start.bat
 start.bat.lnk
 __pycache__/
@@ -8,3 +9,4 @@ transcrypts.txt
 logs.log
 logs/speechrecognition.log
 brain/jokes.txt
+.DS_Store

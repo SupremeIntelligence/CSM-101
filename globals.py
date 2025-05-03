@@ -1,6 +1,9 @@
 users = {}
 USER_DATA_FILE = "brain/users.json"
 WHISPER_MODELS_DIRECTORY = "/Users/supremeintelligence/IT/Whisper Models"
+TTS_CONFIG_PATH = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2/config.json"
+TTS_MODEL_DIR = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2"
+TTS_LATENTS_PATH = "/Users/supremeintelligence/IT/CSM-101/revenant_latents.pt"
 LAMP_CHANNEL_ID = 695673593618497678
 MERCHER_ID = 496954299243560960
 SUPREME_INTELLIGENCE_ID = 272060741954174987

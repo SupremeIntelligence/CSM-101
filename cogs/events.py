@@ -9,10 +9,15 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.guild is not None:
+            bot_mention = message.guild.me.mention
+        else:
+            bot_mention = self.bot.user.mention
+            
         if message.content == f"""<@{globals.MERCHER_ID}>""":
             response = random.choice(globals.MERCHER_PHRASES)
             await message.channel.send(response)
-        elif message.content.strip() == message.guild.me.mention:
+        elif message.content.strip() == bot_mention:
             await message.channel.send ("Чего ты хочешь от меня, жалкий мешок с костями?")
 
     @commands.Cog.listener()
