@@ -4,7 +4,8 @@ from logger import logger
 import asyncio
 import sys
 import os
-
+from utils import set_activity
+from globals import DEFAULT_ACTIVITY, MAINTENANCE_ACTIVITY
 class Maintenance(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -17,12 +18,10 @@ class Maintenance(commands.Cog):
         self.bot.mode = mode
         if self.bot.mode:
             status = "включен."
-            custom_actvity = discord.CustomActivity(name="🛠️В процессе технического апгрейда🛠️")
-            await self.bot.change_presence(status=discord.Status.idle, activity=custom_actvity)
+            await set_activity(self.bot, activity_text=MAINTENANCE_ACTIVITY, status=discord.Status.idle)
         else:
             status = "выключен."
-            custom_activity = discord.CustomActivity(name="Следит за Мерчером 👀")
-            await self.bot.change_presence(status=discord.Status.online, activity=custom_activity)
+            await set_activity(self.bot, activity_text=DEFAULT_ACTIVITY)
             
         await interaction.response.send_message(f"Режим техобслуживания {status}", ephemeral=True)
 

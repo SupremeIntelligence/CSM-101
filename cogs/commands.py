@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import globals
-from joke import get_joke
+from utils import get_joke, load_jokes
 from logger import logger
 
 class Commands(commands.Cog):
@@ -58,7 +58,9 @@ class Commands(commands.Cog):
         if user.id == globals.SUPREME_INTELLIGENCE_ID and interaction.user.id != globals.SUPREME_INTELLIGENCE_ID:
             await interaction.response.send_message ("Ты че, охуел?")
             user = interaction.user
-            await interaction.followup.send("Инициализация боевого протокола....")  
+        elif user.id == self.bot.user.id: 
+            await interaction.response.send_message ("Хитрый мешок с костями.....")
+            user = interaction.user
         else:
             await interaction.response.send_message("Инициализация боевого протокола....")
 
@@ -81,6 +83,8 @@ class Commands(commands.Cog):
 async def setup(bot):
    await bot.add_cog(Commands(bot)) 
    logger.info ("Основной командный модуль загружен.")
+   globals.jokes = load_jokes()
+   logger.info("База анекдотов загружена")
    
 
    

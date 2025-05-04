@@ -26,13 +26,13 @@ class Backend(Enum):
 
 def get_device() -> Backend:
     if platform.system() == "Darwin":
-        logger.info("WHISPER_MACOS: Using whisper.cpp")
+        logger.debug("WHISPER_MACOS: Using whisper.cpp")
         return Backend.MACOS
     elif torch.backends.cuda.is_available():
-        logger.info ("WHISPER_CUDA: CUDA is availible. Using OpenAI WhisperAI")
+        logger.debug ("WHISPER_CUDA: CUDA is availible. Using OpenAI WhisperAI")
         return Backend.CUDA
     else:
-        logger.info("WHISPER_CPU: Using OpenAI WhisperAI on CPU")
+        logger.debug("WHISPER_CPU: Using OpenAI WhisperAI on CPU")
         return Backend.CPU
     
 class Voice(commands.Cog):
@@ -65,7 +65,6 @@ class Voice(commands.Cog):
                 self.stt_executor,
                 _initialize_STT
             )
-        
 
     async def _init_TTS(self):
         def _initialize_TTS():
@@ -81,7 +80,6 @@ class Voice(commands.Cog):
             self.tts_executor,
             _initialize_TTS
         )
-        
 
     def _speech_tracing(self) -> str:
         content = ["### Трассировка реплик: "]
@@ -90,98 +88,88 @@ class Voice(commands.Cog):
         joined_content = "\n".join(content)
         return joined_content
 
-    @discord.app_commands.command(name="join", description="Подключить бота к голосовому каналу")
-    @discord.app_commands.describe(channel="Выберите голосовой канал", listen="Включение/выключение системы распознавания речи")
-    async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel, listen: bool = False):
-
-        def audio_info_callback(user: discord.Member, data: voice_recv.VoiceData):
-            log_time = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-            size_kb = len(data.packet.decrypted_data) / 1024
-            file_size = os.path.getsize(VOICE_RECORDING_FILE) / 1024
-            print(f'''{log_time}: Получены аудиоданные от пользователя {user.name} ({user.id}) 
-            Additional data: 
-                    is_silence: {data.packet.is_silence()}, 
-                    packet_size:{size_kb:.2f} KB
-                    voice_file_size: {file_size:.2f} KB''')
-            
-        message = await interaction.response.send_message(f"Начинаю запись и анализ аудиоданных в канале {channel.name}", ephemeral=True)
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.disconnect()
-
-        async def async_whisper_process_callback(_recognizer, audio, user):
-            raw_data = audio.get_raw_data()
-            if len(raw_data) < 4000:
-                    #sr_logger.debug("Ignoring very short audio sequence.")
-                    return None
-            
-            start_time = time.time()
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_audio:
-                temp_audio.write(audio.get_wav_data())
-                temp_audio.flush()
-                try:
-                    if self.device == Backend.WHISPER_MACOS:
-                        #sr_logger.debug("Using CoreML backend for Whisper.cpp")
-                        result = await self.loop.run_in_executor (
-                            self.stt_executor,
-                            whisper_processor.process_audio,
-                            temp_audio.name,
-                            "small")
-                    else:
-                        def transcribe ():
-                            return self.STT.transcribe(temp_audio.name,
-                                                        language="ru",
-                                                        temperature=[0.0, 0.1, 0.2],
-                                                        no_speech_threshold=0.8,
-                                                        word_timestamps=False,
-                                                        hallucination_silence_threshold=True,
-                                                        beam_size=3,
-                                                        task="transcribe", 
-                                                        fp16=False)
-                        
-                        result = await self.loop.run_in_executor(
-                            self.stt_executor,
-                            transcribe)
-                        result = result["text"]
-                except Exception as e:
-                    sr_logger.error ("Error processing speech using Whisper")
-                    return None
-                
-                finally:
-                    elapsed = time.time() - start_time
-                    duration_seconds = len(raw_data) / (audio.sample_rate * audio.sample_width)
-                    backend = ""
-                    model_name = ""
-                    if self.device == Backend.MACOS:
-                        backend = "CoreMl"
-                        model_name = "whisper.cpp"
-                    else:
-                        backend = f"{self.device.name.lower()}"
-                        model_name = "OpenAI Whisper"
-
-                    sr_logger.info(f"Processed audio data: {len(raw_data)}B ({len(raw_data)/1024:.2f} KB), duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
-                    return result
-                    #print(result["segments"])
-
-        def whisper_process_callback (_recognizer, audio, user):
-            coro = async_whisper_process_callback(_recognizer, audio, user)
+    def _whisper_process_callback (self, _recognizer, audio, user):
+            coro = self._async_whisper_process_callback(_recognizer, audio, user)
             future = asyncio.run_coroutine_threadsafe(coro, self.loop)
             try:
                 return future.result()
             except Exception as e:
                 sr_logger.error(f"Whisper_process_callback error: {e}")
             return None
+    
+    async def _async_whisper_process_callback(self, _recognizer, audio, user):
+        raw_data = audio.get_raw_data()
+        if len(raw_data) < 4000:
+                #sr_logger.debug("Ignoring very short audio sequence.")
+                return None
+        result = None
+        start_time = time.time()
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_audio:
+            temp_audio.write(audio.get_wav_data())
+            temp_audio.flush()
+            try:
+                if self.device == Backend.MACOS:
+                    #sr_logger.debug("Using CoreML backend for Whisper.cpp")
+                    result = await self.loop.run_in_executor (
+                        self.stt_executor,
+                        whisper_processor.process_audio,
+                        temp_audio.name,
+                        "small")
+                else:
+                    def transcribe ():
+                        return self.STT.transcribe(temp_audio.name,
+                                                    language="ru",
+                                                    temperature=[0.0, 0.1, 0.2],
+                                                    no_speech_threshold=0.8,
+                                                    word_timestamps=False,
+                                                    hallucination_silence_threshold=True,
+                                                    beam_size=3,
+                                                    task="transcribe", 
+                                                    fp16=False)
+                    
+                    result = await self.loop.run_in_executor(
+                        self.stt_executor,
+                        transcribe)
+                    result = result["text"]
+            except Exception as e:
+                sr_logger.error ("Error processing speech using Whisper")
+                return None
+            
+            finally:
+                elapsed = time.time() - start_time
+                duration_seconds = len(raw_data) / (audio.sample_rate * audio.sample_width)
+                backend = ""
+                model_name = ""
+                if self.device == Backend.MACOS:
+                    backend = "CoreMl"
+                    model_name = "whisper.cpp"
+                else:
+                    backend = f"{self.device.name.lower()}"
+                    model_name = "OpenAI Whisper"
 
-        async def voice_rec_callback (user: discord.User, text: str):
+                sr_logger.info(f"Processed audio data: {len(raw_data)}B ({len(raw_data)/1024:.2f} KB), duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
+                return result
+                #print(result["segments"])   
+
+    @discord.app_commands.command(name="join", description="Подключить бота к голосовому каналу")
+    @discord.app_commands.describe(channel="Выберите голосовой канал", listen="Включение/выключение системы распознавания речи")
+    async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel, listen: bool = False):
+            
+        message = await interaction.response.send_message(f"Начинаю запись и анализ аудиоданных в канале {channel.name}", ephemeral=True)
+        if interaction.guild.voice_client:
+            await interaction.guild.voice_client.disconnect()
+
+        async def _voice_rec_callback (user: discord.User, text: str):
             sr_logger.info (f"User {user} ({user.id}) said {text} ")
             self.transcripts.append ({"user":user.display_name, "text": text})
             print(f"🗣 {user.display_name}({user.id}): {text}")
             await interaction.edit_original_response(content=self._speech_tracing())
 
-        voice_sink = voice_recv.extras.SpeechRecognitionSink(process_cb=whisper_process_callback, 
+        voice_sink = voice_recv.extras.SpeechRecognitionSink(process_cb=self._whisper_process_callback, 
                                                             default_recognizer='whisper',
                                                             phrase_time_limit=11,
                                                             text_cb=lambda user, text: asyncio.run_coroutine_threadsafe(
-                                                                                voice_rec_callback(user, text), self.loop),
+                                                                                _voice_rec_callback(user, text), self.loop),
                                                             ignore_silence_packets=True)
 
         self.voice_client = await channel.connect(cls=voice_recv.VoiceRecvClient)
@@ -213,7 +201,7 @@ class Voice(commands.Cog):
             temp_path = tmp.name
             try:
                 try:
-                    self.TTS.proccess_TTS(text=text, file_path=temp_path)
+                    await self.loop.run_in_executor(self.tts_executor, self.TTS.proccess_TTS, text, temp_path)
                     audio = discord.FFmpegPCMAudio(temp_path)
                     if self.voice_client.is_playing():
                         self.voice_client.stop()

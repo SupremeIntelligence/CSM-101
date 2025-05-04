@@ -3,6 +3,7 @@ from discord.ext import commands
 from logger import logger
 import globals
 import random
+from utils import set_activity
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -13,7 +14,7 @@ class Events(commands.Cog):
             bot_mention = message.guild.me.mention
         else:
             bot_mention = self.bot.user.mention
-            
+
         if message.content == f"""<@{globals.MERCHER_ID}>""":
             response = random.choice(globals.MERCHER_PHRASES)
             await message.channel.send(response)
@@ -25,13 +26,14 @@ class Events(commands.Cog):
         logger.error("Unexpected error")
         await self.bot.close()
 
-    #не работает
+    #Работает при реконнектах
     @commands.Cog.listener()
     async def on_ready(self):
+        await set_activity(self.bot, activity_text=globals.DEFAULT_ACTIVITY)
         channel = self.bot.get_channel(globals.SYS_CHANNEL_ID)
         if channel:
             await channel.send("Бот запущен")
-        logger.info(f"Bot started working as {self.bot.user}.")
+        logger.info(f"Бот перезапустил работу.")
 
     @commands.Cog.listener()
     async def on_command_error(seld, ctx, error):
