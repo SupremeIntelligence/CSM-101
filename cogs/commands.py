@@ -6,11 +6,11 @@ from utils import get_joke, load_jokes
 from logger import logger
 
 class Commands(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @discord.app_commands.command(name="ping", description="Вызов бота")
-    async def ping(self, interaction: discord.Integration):
+    async def ping(self, interaction: discord.Interaction):
         
         message = await interaction.response.send_message("Скажи да")
 
@@ -28,10 +28,6 @@ class Commands(commands.Cog):
                 await response.reply("ок")
         except asyncio.TimeoutError:
             await interaction.followup.send("Игнорщик ебаный")
-
-    @discord.app_commands.command(name="dinamo", description="Любимый клуб Мерчера")
-    async def dinamo(self, interaction: discord.Interaction):
-        await interaction.response.send_message("ДИНАМО")
 
     @discord.app_commands.command(name="call-mercher", description="Say his name")
     async def call_mercher(self, interaction: discord.Interaction):
@@ -80,7 +76,7 @@ class Commands(commands.Cog):
         await user.move_to(original_channel)
         await interaction.edit_original_response(content = f"Пользователь {user.mention} гулял в течение {duration} секунд.")
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
    await bot.add_cog(Commands(bot)) 
    logger.info ("Основной командный модуль загружен.")
    globals.jokes = load_jokes()

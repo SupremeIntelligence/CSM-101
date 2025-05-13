@@ -5,16 +5,19 @@ import guild_info
 import globals
 import random
 from typing import Optional
+import asyncio
 
 async def send_announcement(bot: commands.Bot, announcement_channel_id: int, message: str = None, embed: discord.Embed = None):
     channel = bot.get_channel(announcement_channel_id)
     if channel:
         if message:
             await channel.send(content=message)
+            logger.info (f"Объявление опубликовано в канале {channel.name}.")
         elif embed:
             await channel.send(embed=embed)
+            logger.info (f"Объявление '{embed.title}' опубликовано в канале {channel.name}.")
     else:
-        print(f"Канал с ID {announcement_channel_id} не найден.")
+        logger.warning(f"Канал с ID {announcement_channel_id} не найден.")
 
 async def set_activity(bot: commands.Bot,
                        activity_text: str = None,
@@ -32,9 +35,19 @@ async def set_activity(bot: commands.Bot,
     await bot.change_presence(status=status, activity=activity)
 
 async def load_cogs(bot:commands.Bot):
+    reload = False
     for module in globals.COG_MODULES:
-        await bot.load_extension (f'cogs.{module}')
-    logger.info("Все командные модули загружены")
+        extension = f'cogs.{module}'
+        if extension in bot.extensions:
+            await bot.reload_extension(extension)
+            reload = True
+        else:
+            await bot.load_extension(extension)
+    if reload:
+        logger.info("Все командные модули перезагружены") 
+    else:
+        logger.info("Все командные модули загружены") 
+    
 
 def sync_stats (bot: commands.Bot):
     globals.users = guild_info.load_users(filename=globals.USER_DATA_FILE)
@@ -56,3 +69,9 @@ def load_jokes(filename = globals.JOKES_DATA_FILE):
 
 def get_joke(jokes: list[str]):
     return random.choice(jokes)
+
+def print_all_tasks ():
+    tasks = asyncio.all_tasks()  # Можно передать loop, если нужно
+    print(f"🔍 Найдено {len(tasks)} задач:")
+    for task in tasks:
+        print(f"- {task.get_name()} | {task}")

@@ -6,8 +6,10 @@ import sys
 import os
 from utils import set_activity
 from globals import DEFAULT_ACTIVITY, MAINTENANCE_ACTIVITY
+
+from soundboard import SoundboardView
 class Maintenance(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.bot.mode = False
 
@@ -27,7 +29,7 @@ class Maintenance(commands.Cog):
 
     @commands.hybrid_command(name="shutdown", description="Выключение бота")
     @commands.has_role("Supreme Intelligence")
-    async def shutdown(self, ctx):
+    async def shutdown(self, ctx: commands.Context):
         await ctx.send("Выключение бота", ephemeral=True)
         await asyncio.sleep(10)
         await self.bot.close()
@@ -57,17 +59,24 @@ class Maintenance(commands.Cog):
         try:
             await interaction.response.defer(ephemeral=True, thinking=True)
             await self.bot.reload_extension(f'cogs.{module}')
-            await interaction.followup.send(f"Модуль {module} успешно перезагружен.", ephemeral=True)
+            await interaction.followup.send(f"🧩 Модуль {module} успешно перезагружен.", ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(f"Ошибка при перезагрузке модуля {module}: {e}", ephemeral=True)
             logger.error(f"Ошибка при перезагрузке модуля {module}: {e}")
 
+    @discord.app_commands.command(name="test", description="Команда тестирования")
+    @discord.app_commands.describe(count="Количество кнопок")
+    @discord.app_commands.checks.has_role("Supreme Intelligence")
+    async def test (self, interaction: discord.Interaction, count: int = 3):
+        #await interaction.response.send_message(content="Hello World!", ephemeral=True, delete_after=60)
+        view = SoundboardView(count)
+        await interaction.response.send_message(content="Hello World!", view=view)
+        
     @commands.Cog.listener()
-    async def on_command(self, ctx):
+    async def on_command(self, ctx: commands.Context):
         logger.info (f"Команда '{ctx.command}' вызвана пользователем {ctx.author}, канал: {ctx.channel}")
         if self.bot.mode and ctx.command.name != "maintenance":
             await ctx.send("🛠️Бот в режиме тех. обслуживания.🛠️", ephemeral=True)
-            raise commands.CommandsError("Бот в режиме тех. обслуживания.")
         
     @commands.Cog.listener()
     async def on_interaction(self, interaction: discord.Interaction):
@@ -76,7 +85,7 @@ class Maintenance(commands.Cog):
              if not interaction.response.is_done(): 
                 await interaction.followup.send("🛠️Бот в режиме тех. обслуживания. Некоторые команды могут работать некорректно или не работать вовсе 🛠️", ephemeral=True)
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
    await bot.add_cog(Maintenance(bot)) 
    logger.info ("Модуль управления загружен.")
    

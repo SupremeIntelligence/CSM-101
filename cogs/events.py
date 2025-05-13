@@ -5,7 +5,7 @@ import globals
 import random
 from utils import set_activity
 class Events(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -29,22 +29,30 @@ class Events(commands.Cog):
     #Работает при реконнектах
     @commands.Cog.listener()
     async def on_ready(self):
-        await set_activity(self.bot, activity_text=globals.DEFAULT_ACTIVITY)
-        channel = self.bot.get_channel(globals.SYS_CHANNEL_ID)
+        await set_activity(self.bot, activity_text=globals.LISTEN_ACTIVITY, activity_type=discord.ActivityType.listening)
+        """channel = self.bot.get_channel(globals.SYS_CHANNEL_ID)
         if channel:
-            await channel.send("Бот запущен")
+            await channel.send("Бот перезапущен", silent=True)"""
         logger.info(f"Бот перезапустил работу.")
+    
+    @commands.Cog.listener()
+    async def on_connect(self):
+        logger.info("Бот подключился к Discord.")
 
     @commands.Cog.listener()
-    async def on_command_error(seld, ctx, error):
+    async def on_disconnect(self):
+        logger.warning("Бот отключился от Discord.")
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance (error, commands.CommandNotFound):
             logger.warning (f"Неизвестная команда {ctx.message.content}")
             await ctx.send("Данной команды не существует.")
         elif isinstance(error, commands.MissingPermissions):
-            logger.warning(f"Недостаточно прав для выполнения команды {ctx.command} пользователем {ctx.author}")
+            logger.warning(f"Недостаточно прав для выполнения команды {ctx.command} пользователем {ctx.author}", ephemeral=True)
             await ctx.send("Недостаточно прав для выполнения данной команды.")
         elif isinstance(error, commands.MissingRole):
-            logger.warning(f"Недостаточно прав для выполнения команды {ctx.command} пользователем {ctx.author}")
+            logger.warning(f"Недостаточно прав для выполнения команды {ctx.command} пользователем {ctx.author}", ephemeral=True)
             await ctx.send("Недостаточно прав для выполнения данной команды.")
         else:
             logger.error (f"Произошла неизвестная ошибка - Команда: {ctx.command}, сообщение: {ctx.message.content}, пользователь: {ctx.author}, канал: {ctx.channel}")
@@ -76,7 +84,8 @@ class Events(commands.Cog):
                 logger.info(f"Бот подключился к голосовому каналу {after.channel.name}")
             elif before.channel is not None and after.channel is None:
                 logger.info(f"Бот отключился от канала {before.channel.name}")
-async def setup(bot):
+
+async def setup(bot: commands.Bot):
     await bot.add_cog(Events(bot))
     logger.info("Модуль ивентов загружен.")
     

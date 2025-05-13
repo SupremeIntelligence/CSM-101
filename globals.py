@@ -1,10 +1,14 @@
-users = {}
-USER_DATA_FILE = "brain/users.json"
+from user import User
+users: dict[int, User] = {}
+jokes: list[str]
+
+USER_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/users.json"
 
 WHISPER_MODELS_DIRECTORY = "/Users/supremeintelligence/IT/Whisper Models"
 TTS_CONFIG_PATH = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2/config.json"
 TTS_MODEL_DIR = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2"
 TTS_LATENTS_PATH = "/Users/supremeintelligence/IT/CSM-101/revenant_latents.pt"
+ENV_FILE_PATH = "/Users/supremeintelligence/IT/CSM-101/config.env"
 
 LAMP_CHANNEL_ID = 695673593618497678
 ANNOUNCEMENT_CHANNEL_ID = 728153179644100619
@@ -13,9 +17,9 @@ SUPREME_INTELLIGENCE_ID = 272060741954174987
 SYS_CHANNEL_ID = 1002897000573960202 #основной-аналотдел
 SERVER_ID = 551094222825193503
 
-JOKES_DATA_FILE = "brain/jokes.txt"
-MAIN_LOG_FILE = "logs/logs.log"
-VOICE_LOG_FILE = "logs/speechrecognition.log"
+JOKES_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/jokes.txt"
+MAIN_LOG_FILE = "/Users/supremeintelligence/IT/CSM-101/logs/logs.log"
+VOICE_LOG_FILE = "/Users/supremeintelligence/IT/CSM-101/logs/speechrecognition.log"
 
 COG_MODULES = ["commands", 
                "events", 
@@ -28,7 +32,6 @@ GAME_ACTIVITY = "тест боевого модуля CSM-101💣"
 MAINTENANCE_ACTIVITY = "🛠️В процессе технического апгрейда🛠️"
 LISTEN_ACTIVITY = "пульс цивилизации🎧"
 
-jokes = []
 MERCHER_PHRASES = [
     "Mercher — человек-загадка. Загадка, которую никто не хочет разгадывать.",
     "Mercher заходит в чат — сервера сами просят удалить себя.",

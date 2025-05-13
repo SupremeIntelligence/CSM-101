@@ -4,7 +4,6 @@ import whisper
 from discord.ext import voice_recv
 from logger import logger, sr_logger
 from globals import WHISPER_MODELS_DIRECTORY, TTS_MODEL_DIR, TTS_CONFIG_PATH, TTS_LATENTS_PATH
-import datetime
 import os
 import tempfile
 from collections import deque
@@ -16,6 +15,7 @@ import whisper_processor
 import time
 from concurrent.futures import ThreadPoolExecutor
 from tts_processor import TTS_Processor
+import re
 
 TARGET_WORDS = ["mercher", "мерчер", "ты меня слышишь?"]
 VOICE_RECORDING_FILE = "voice_recordings.wav"
@@ -36,7 +36,7 @@ def get_device() -> Backend:
         return Backend.CPU
     
 class Voice(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.voice_client = None
         self.transcripts = deque (maxlen=5)
@@ -147,23 +147,48 @@ class Voice(commands.Cog):
                     backend = f"{self.device.name.lower()}"
                     model_name = "OpenAI Whisper"
 
-                sr_logger.info(f"Processed audio data: {len(raw_data)}B ({len(raw_data)/1024:.2f} KB), duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
+                sr_logger.info(f"Processed audio data: size={len(raw_data)/1024:.2f} KB, duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
                 return result
                 #print(result["segments"])   
+
+    async def _response (self, text=str):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            temp_path = tmp.name
+            try:
+                try:
+                    await self.loop.run_in_executor(self.tts_executor, self.TTS.proccess_TTS, text, temp_path)
+                    audio = discord.FFmpegPCMAudio(temp_path)
+                    if self.voice_client.is_playing():
+                        await asyncio.sleep(0.5)
+                    self.voice_client.play(audio)
+                except Exception as e:
+                    sr_logger.error(f"TTS ошибка: {e}")
+                    return
+                sr_logger.info(f"🤖 Бот произнес фразу '{text}' в голосовом канале {self.voice_client.channel}")
+                print (f"🤖 Бот произнес фразу '{text}' в голосовом канале {self.voice_client.channel}")
+                while self.voice_client.is_playing():
+                    await asyncio.sleep(0.5)
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
 
     @discord.app_commands.command(name="join", description="Подключить бота к голосовому каналу")
     @discord.app_commands.describe(channel="Выберите голосовой канал", listen="Включение/выключение системы распознавания речи")
     async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel, listen: bool = False):
             
-        message = await interaction.response.send_message(f"Начинаю запись и анализ аудиоданных в канале {channel.name}", ephemeral=True)
+        await interaction.response.send_message(f"Начинаю запись и анализ аудиоданных в канале {channel.name}", ephemeral=True)
         if interaction.guild.voice_client:
             await interaction.guild.voice_client.disconnect()
 
         async def _voice_rec_callback (user: discord.User, text: str):
-            sr_logger.info (f"User {user} ({user.id}) said {text} ")
+            sr_logger.info (f"🗣 Пользователь {user} ({user.id}) произнес '{text}' ")
             self.transcripts.append ({"user":user.display_name, "text": text})
             print(f"🗣 {user.display_name}({user.id}): {text}")
             await interaction.edit_original_response(content=self._speech_tracing())
+            '''pattern = r"(Бот|Мерчер|Вот),?\s*дай\s+зву[ка]"
+                if re.search(pattern=pattern, string=result, flags=re.IGNORECASE):
+                    print ("smth")
+                    await self.response("Мерчер, пошел в пизду")'''
 
         voice_sink = voice_recv.extras.SpeechRecognitionSink(process_cb=self._whisper_process_callback, 
                                                             default_recognizer='whisper',
@@ -220,7 +245,7 @@ class Voice(commands.Cog):
                     os.remove(temp_path)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     cog = Voice(bot)
     await bot.add_cog(cog)
     logger.info ("Голосовой модуль загружен.")
