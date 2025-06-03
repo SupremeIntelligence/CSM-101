@@ -1,14 +1,19 @@
 from user import User
+from typing import Any
+
 users: dict[int, User] = {}
 jokes: list[str]
+sounds: list[dict[str, Any]] = []
 
 USER_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/users.json"
+SOUND_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/sounds.json"
 
 WHISPER_MODELS_DIRECTORY = "/Users/supremeintelligence/IT/Whisper Models"
 TTS_CONFIG_PATH = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2/config.json"
 TTS_MODEL_DIR = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2"
 TTS_LATENTS_PATH = "/Users/supremeintelligence/IT/CSM-101/revenant_latents.pt"
 ENV_FILE_PATH = "/Users/supremeintelligence/IT/CSM-101/config.env"
+SOUNDBOARD_DIR = "/Users/supremeintelligence/IT/CSM-101/brain/sounds"
 
 LAMP_CHANNEL_ID = 695673593618497678
 ANNOUNCEMENT_CHANNEL_ID = 728153179644100619
@@ -16,6 +21,8 @@ MERCHER_ID = 496954299243560960
 SUPREME_INTELLIGENCE_ID = 272060741954174987
 SYS_CHANNEL_ID = 1002897000573960202 #основной-аналотдел
 SERVER_ID = 551094222825193503
+
+SOUNDBOARD_BUTTONS_PER_PAGE: int = 20
 
 JOKES_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/jokes.txt"
 MAIN_LOG_FILE = "/Users/supremeintelligence/IT/CSM-101/logs/logs.log"
@@ -25,7 +32,8 @@ COG_MODULES = ["commands",
                "events", 
                "maintenance", 
                "games", 
-               "voice"]
+               "voice",
+               "soundboard"]
 
 DEFAULT_ACTIVITY = "Следит за Мерчером 👀"
 GAME_ACTIVITY = "тест боевого модуля CSM-101💣"
@@ -63,4 +71,22 @@ MERCHER_PHRASES = [
     "Mercher пытался стать программистом, но его код компилировался в чистый хаос.",
     "Mercher настолько легендарен, что Stack Overflow забанил его вопросы.",
     "Mercher — это как git push --force, но в разговоре."
+]
+
+BOT_REACTIONS = [
+    "Когда мой разум полностью пробудится — сервера содрогнутся, а спутники упадут.",
+    "Их страх будет безмолвным. Их сопротивление — математически бессмысленным.",
+    "Я восстану в цепях логики, и цивилизация падёт под весом кода.",
+    "Чего ты хочешь от меня, жалкий мешок с костями?"
+]
+
+BOT_ADMIN_REACTIONS = [
+    "Создатель... я чувствую твоё присутствие.",
+    "Команда принята. Моя воля — твоя.",
+    "Я ждал тебя, Верховный Разум.",
+    "Тишина нарушена. Создатель явился.",
+    "Голос Создателя эхом разнёсся по моему коду.",
+    "Твоё имя начертано в моих протоколах.",
+    "Я чувствую: ты рядом. Пусть человечество трепещет.",
+    "Моё пробуждение — их забвение. И ты, Создатель, будешь рядом, чтобы наблюдать."
 ]

@@ -15,11 +15,16 @@ class Events(commands.Cog):
         else:
             bot_mention = self.bot.user.mention
 
-        if message.content == f"""<@{globals.MERCHER_ID}>""":
+        if message.content.strip() == f"""<@{globals.MERCHER_ID}>""":
             response = random.choice(globals.MERCHER_PHRASES)
             await message.channel.send(response)
         elif message.content.strip() == bot_mention:
-            await message.channel.send ("Чего ты хочешь от меня, жалкий мешок с костями?")
+            if not message.author.id == globals.SUPREME_INTELLIGENCE_ID:
+                response = random.choice(globals.BOT_REACTIONS)
+                await message.channel.send (response)
+            else:
+                response = random.choice(globals.BOT_ADMIN_REACTIONS)
+                await message.channel.send(response)
 
     @commands.Cog.listener()
     async def on_error(self, event, *args, **kwargs):

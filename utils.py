@@ -75,3 +75,7 @@ def print_all_tasks ():
     print(f"🔍 Найдено {len(tasks)} задач:")
     for task in tasks:
         print(f"- {task.get_name()} | {task}")
+
+async def clear_commands (bot: commands.Bot):
+    await bot.tree.sync()
+    bot.tree.clear_commands(guild=None)

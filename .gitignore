@@ -10,3 +10,4 @@ logs.log
 logs/speechrecognition.log
 brain/jokes.txt
 .DS_Store
+brain/sounds/

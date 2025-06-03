@@ -207,9 +207,10 @@ class Voice(commands.Cog):
 
     @discord.app_commands.command(name="leave", description="Отключить бота от голосового канала")
     async def leave(self, interaction: discord.Interaction):
-        if self.voice_client:
-            self.voice_client.stop_listening()
-            await self.voice_client.disconnect()
+        vc = self.voice_client or interaction.guild.voice_client
+        if vc:
+            #self.voice_client.stop_listening()
+            await vc.disconnect()
             await interaction.response.send_message("Отключился от голосового канала.", ephemeral=True)
         else:
             await interaction.response.send_message("Бот не подключен к голосовому каналу.", ephemeral=True)
@@ -217,12 +218,24 @@ class Voice(commands.Cog):
     @discord.app_commands.command(name="say", description="Позволяет произнести введенную фразу в голосовом канале.")
     @discord.app_commands.describe(text="Введите текст, который бот должен озвучить")
     async def say(self, interaction: discord.Interaction, text: str):
+        #if not self.voice_client:
+            #await interaction.response.send_message("Бот должен быть подключен к голосовому каналу.", ephemeral=True)
+            #return
+        await interaction.response.defer(ephemeral=True, thinking=True)
         if not self.voice_client:
-            await interaction.response.send_message("Бот должен быть подключен к голосовому каналу.", ephemeral=True)
-            return
-        
+            voice_state = interaction.user.voice
+            if not voice_state or not voice_state.channel:
+                await interaction.response.send_message("❗ Вы не находитесь в голосовом канале!", ephemeral=True)
+                return
+            voice_channel = voice_state.channel
+            self.voice_client = interaction.guild.voice_client
+            if not self.voice_client or not self.voice_client.is_connected():
+                self.voice_client = await voice_channel.connect()
+            elif self.voice_client.channel != voice_channel:
+                await self.voice_client.move_to(voice_channel)
+
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            await interaction.response.defer(ephemeral=True, thinking=True)
+            
             temp_path = tmp.name
             try:
                 try:
