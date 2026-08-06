@@ -25,6 +25,9 @@ class Events(commands.Cog):
             else:
                 response = random.choice(globals.BOT_ADMIN_REACTIONS)
                 await message.channel.send(response)
+        else: 
+            #функция активации чата либо поместить ее в commands.py
+            pass
 
     @commands.Cog.listener()
     async def on_error(self, event, *args, **kwargs):

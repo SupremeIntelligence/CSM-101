@@ -4,9 +4,13 @@ from typing import Any
 users: dict[int, User] = {}
 jokes: list[str]
 sounds: list[dict[str, Any]] = []
+memory: list[dict[str, str]] = []
+help_commands: list[dict[str, str]] = []
 
 USER_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/users.json"
 SOUND_DATA_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/sounds.json"
+MEMORY_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/memory.json"
+HELP_COMMANDS_FILE = "/Users/supremeintelligence/IT/CSM-101/brain/help_commands.json"
 
 WHISPER_MODELS_DIRECTORY = "/Users/supremeintelligence/IT/Whisper Models"
 TTS_CONFIG_PATH = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual--multi-dataset--xtts_v2/config.json"
@@ -14,6 +18,7 @@ TTS_MODEL_DIR = "/Users/supremeintelligence/IT/TTS/tts/tts_models--multilingual-
 TTS_LATENTS_PATH = "/Users/supremeintelligence/IT/CSM-101/revenant_latents.pt"
 ENV_FILE_PATH = "/Users/supremeintelligence/IT/CSM-101/config.env"
 SOUNDBOARD_DIR = "/Users/supremeintelligence/IT/CSM-101/brain/sounds"
+TEMP_DIR = "/Users/supremeintelligence/IT/CSM-101/temp"
 
 LAMP_CHANNEL_ID = 695673593618497678
 ANNOUNCEMENT_CHANNEL_ID = 728153179644100619

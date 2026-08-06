@@ -2,16 +2,40 @@ import discord
 from discord.ext import commands
 import asyncio
 import globals
-from utils import get_joke, load_jokes
+from utils import get_joke, load_jokes, load_memory, save_memory, load_help_commands
 from logger import logger
+from ollama import Client as Ollama
 
 class Commands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.MODEL = "CSM-101:latest"
+        self.client = Ollama()
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.guild is not None:
+            bot_mention = message.guild.me.mention
+        else:
+            bot_mention = self.bot.user.mention
+
+        if message.content.startswith(bot_mention) and len(message.content) > len(bot_mention):
+            message.content = message.content.replace (bot_mention, "", 1).strip()
+            await self.chat(message)
+            #print ("Message received:", message.content)
+
+    async def chat (self, message: discord.Message):
+        prompt = message.content
+        globals.memory.append({"role": "user", "content": prompt})
+        response = self.client.chat(model=self.MODEL,
+                           messages=globals.memory,
+                           options={"n":1}) 
+        globals.memory.append({"role": "assistant", "content": response.message.content})
+        await message.channel.send(response.message.content)
+        save_memory(globals.memory)
 
     @discord.app_commands.command(name="ping", description="Вызов бота")
     async def ping(self, interaction: discord.Interaction):
-        
         message = await interaction.response.send_message("Скажи да")
 
         def check(m: discord.Message):
@@ -76,42 +100,88 @@ class Commands(commands.Cog):
         await user.move_to(original_channel)
         await interaction.edit_original_response(content = f"Пользователь {user.mention} гулял в течение {duration} секунд.")
 
+    @discord.app_commands.command (name="help", description="Справка по управлению ботом")
+    async def help (self, interaction: discord.Interaction):
+        help_view = HelpView(globals.help_commands)
+        await interaction.response.send_message("Выберите команду из списка ниже:", view=help_view, ephemeral=True)
+
 async def setup(bot: commands.Bot):
    await bot.add_cog(Commands(bot)) 
    logger.info ("Основной командный модуль загружен.")
    globals.jokes = load_jokes()
    logger.info("База анекдотов загружена")
-   
+   globals.memory = load_memory()
+   logger.info("Память загружена")
+   globals.help_commands = load_help_commands()
+   logger.info("Список команд загружен")
 
-   
-# class TrollControlView(discord.ui.View):
-#     def __init__(self, cog: Commands, member: discord.Member, voice_channels):
-#         super().__init__()
-#         self.cog = cog
-#         self.member = member
-#         self.voice_channels = voice_channels
-#         self.running = False
+class HelpView(discord.ui.View):
+    def __init__ (self, commands_list: list[dict[str,str]]):
+        self.commands_list = commands_list
 
-#     @discord.ui.button(label="Старт", style=discord.ButtonStyle.green)
-#     async def start(self, interaction: discord.Interaction, button: discord.ui.Button):
-#         if self.running:
-#             await interaction.response.send_message("⚠ Перемещение уже запущено!", ephemeral=True)
-#             return
-        
-#         self.running = True
-#         index = 0
-#         self.cog.active_trolls[self.member.id] = True
+        timeout = 300
+        super().__init__(timeout=timeout)
+        select = discord.ui.Select(
+            placeholder="Выберите команду",
+            options=[discord.SelectOption(label=command["label"], description=command["short"]) for command in self.commands_list],
+                     custom_id="help_command_select"
+        )
+        select.callback = self.select
+        self.add_item(select)
 
-#         while self.running and self.cog.active_trolls.get(self.member.id, False):
-#             new_channel = self.voice_channels[index % len(self.voice_channels)]
-#             await self.member.move_to(new_channel)
-#             await asyncio.sleep(2)  # Задержка перед следующим перемещением
-#             index += 1
+    def build_help_embed(self, command: dict) -> discord.Embed:
+        """
+        command = {
+            "name": str,
+            "short": str,
+            "description": str,
+            "usage": str,
+            "example": str
+        }
+        """
+        embed = discord.Embed(
+            title=f"📌 Команда /{command['name']}",
+            description=command["short"],
+            color=discord.Color.blurple()
+        )
 
-#     @discord.ui.button(label="Стоп", style=discord.ButtonStyle.red)
-#     async def stop(self, interaction: discord.Interaction, button: discord.ui.Button):
-#         self.running = False
-#         self.cog.active_trolls[self.member.id] = False
-#         await self.member.move_to(None)  # Выкидываем из голосового канала в конце
-#         await interaction.response.send_message(f"✅ {self.member.mention} больше не страдает. 😈")
-#         self.stop()
+        embed.add_field(
+            name="📝 Подробное описание",
+            value=command["description"],
+            inline=False
+        )
+
+        embed.add_field(
+            name="⚙ Использование",
+            value=f"`{command['usage']}`",
+            inline=False
+        )
+
+        embed.add_field(
+            name="💡 Пример",
+            value=f"`{command['example']}`",
+            inline=False
+        )
+
+        return embed
+
+    async def select(self, interaction: discord.Interaction) -> None:
+        #value = interaction.data["values"][0]
+        await interaction.response.defer()
+        command_name = interaction.data["values"][0]
+        #изменить алгоритм поиска команды на более оптимальный, доделать
+        command = self.commands_list.index()
+        embed = self.build_help_embed(command)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+        #await interaction.followup.send(f"You selected {value}", ephemeral=True)
+
+"""class HelpView2(discord.ui.View):
+    @discord.ui.select(
+        cls=discord.ui.Select,
+        options=[discord.SelectOption(label=command["label"], description=command["short"]) for command in self.commands_list],
+    )"""
+
+    
+
+    

@@ -3,7 +3,7 @@ from discord.ext import commands
 import whisper
 from discord.ext import voice_recv
 from logger import logger, sr_logger
-from globals import WHISPER_MODELS_DIRECTORY, TTS_MODEL_DIR, TTS_CONFIG_PATH, TTS_LATENTS_PATH
+from globals import WHISPER_MODELS_DIRECTORY, TTS_MODEL_DIR, TTS_CONFIG_PATH, TTS_LATENTS_PATH, TEMP_DIR
 import os
 import tempfile
 from collections import deque
@@ -15,10 +15,10 @@ import whisper_processor
 import time
 from concurrent.futures import ThreadPoolExecutor
 from tts_processor import TTS_Processor
+from typing import Any
 import re
 
 TARGET_WORDS = ["mercher", "мерчер", "ты меня слышишь?"]
-VOICE_RECORDING_FILE = "voice_recordings.wav"
 class Backend(Enum):
     MACOS = auto()
     CUDA = auto()
@@ -28,7 +28,7 @@ def get_device() -> Backend:
     if platform.system() == "Darwin":
         logger.debug("WHISPER_MACOS: Using whisper.cpp")
         return Backend.MACOS
-    elif torch.backends.cuda.is_available():
+    elif torch.cuda.is_available():
         logger.debug ("WHISPER_CUDA: CUDA is availible. Using OpenAI WhisperAI")
         return Backend.CUDA
     else:
@@ -47,6 +47,8 @@ class Voice(commands.Cog):
         self.tts_executor = ThreadPoolExecutor(max_workers=1) #Thread Pool for TTS tasks
         self.STT = None
         self.TTS = None
+        self.STT_decode_options: dict[str, Any] = {"language": "ru", "task": "transcribe", "fp16": False}
+        #beam_size=3
 
     async def _init_STT(self):
         def _initialize_STT(device: str = "cpu"):
@@ -104,52 +106,52 @@ class Voice(commands.Cog):
                 return None
         result = None
         start_time = time.time()
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_audio:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, dir=TEMP_DIR) as temp_audio:
             temp_audio.write(audio.get_wav_data())
             temp_audio.flush()
-            try:
-                if self.device == Backend.MACOS:
-                    #sr_logger.debug("Using CoreML backend for Whisper.cpp")
-                    result = await self.loop.run_in_executor (
-                        self.stt_executor,
-                        whisper_processor.process_audio,
-                        temp_audio.name,
-                        "small")
-                else:
-                    def transcribe ():
-                        return self.STT.transcribe(temp_audio.name,
-                                                    language="ru",
-                                                    temperature=[0.0, 0.1, 0.2],
-                                                    no_speech_threshold=0.8,
-                                                    word_timestamps=False,
-                                                    hallucination_silence_threshold=True,
-                                                    beam_size=3,
-                                                    task="transcribe", 
-                                                    fp16=False)
-                    
-                    result = await self.loop.run_in_executor(
-                        self.stt_executor,
-                        transcribe)
-                    result = result["text"]
-            except Exception as e:
-                sr_logger.error ("Error processing speech using Whisper")
-                return None
-            
-            finally:
-                elapsed = time.time() - start_time
-                duration_seconds = len(raw_data) / (audio.sample_rate * audio.sample_width)
-                backend = ""
-                model_name = ""
-                if self.device == Backend.MACOS:
-                    backend = "CoreMl"
-                    model_name = "whisper.cpp"
-                else:
-                    backend = f"{self.device.name.lower()}"
-                    model_name = "OpenAI Whisper"
+            temp_path = temp_audio.name
+        try:
+            if self.device == Backend.MACOS:
+                result = await self.loop.run_in_executor (
+                    self.stt_executor,
+                    whisper_processor.process_audio,
+                    temp_audio.name,
+                    "small")
+            else:
+                def transcribe ():
+                    return self.STT.transcribe(temp_path,
+                                                temperature=[0.0, 0.1, 0.2],
+                                                no_speech_threshold=0.8,
+                                                logprob_threshold=-1.2,
+                                                word_timestamps=False,
+                                                hallucination_silence_threshold=True,
+                                                **self.STT_decode_options)
+                
+                result = await self.loop.run_in_executor(
+                    self.stt_executor,
+                    transcribe)
+                result = result["text"]
+        except Exception as e:
+            os.remove(temp_path)
+            sr_logger.error (f"STT Error: {e}")
+            return None
+        
+        finally:
+            os.remove(temp_path)
+            elapsed = time.time() - start_time
+            duration_seconds = len(raw_data) / (audio.sample_rate * audio.sample_width)
+            backend = ""
+            model_name = ""
+            if self.device == Backend.MACOS:
+                backend = "CoreMl"
+                model_name = "whisper.cpp"
+            else:
+                backend = f"{self.device.name.lower()}"
+                model_name = "OpenAI Whisper"
 
-                sr_logger.info(f"Processed audio data: size={len(raw_data)/1024:.2f} KB, duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
-                return result
-                #print(result["segments"])   
+            sr_logger.info(f"Processed audio data: size={len(raw_data)/1024:.2f} KB, duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
+            return result
+            #print(result["segments"])   
 
     async def _response (self, text=str):
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
@@ -190,6 +192,12 @@ class Voice(commands.Cog):
                     print ("smth")
                     await self.response("Мерчер, пошел в пизду")'''
 
+
+        """            r.pause_threshold = 2.0
+            r.phrase_threshold = 0.1
+            r.non_speaking_duration = 0.3
+            r.energy_threshold = 300
+            r.dynamic_energy_threshold = True"""
         voice_sink = voice_recv.extras.SpeechRecognitionSink(process_cb=self._whisper_process_callback, 
                                                             default_recognizer='whisper',
                                                             phrase_time_limit=11,
@@ -199,10 +207,9 @@ class Voice(commands.Cog):
 
         self.voice_client = await channel.connect(cls=voice_recv.VoiceRecvClient)
 
-        sink = voice_recv.MultiAudioSink([voice_sink])
         sr_logger.debug (f"Система распознавания голоса: {listen}")
         if listen:
-            self.voice_client.listen(sink)
+            self.voice_client.listen(voice_sink)
 
 
     @discord.app_commands.command(name="leave", description="Отключить бота от голосового канала")
@@ -235,7 +242,6 @@ class Voice(commands.Cog):
                 await self.voice_client.move_to(voice_channel)
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            
             temp_path = tmp.name
             try:
                 try:
@@ -246,7 +252,7 @@ class Voice(commands.Cog):
                     self.voice_client.play(audio)
                 except Exception as e:
                     await interaction.followup.send("Ошибка при генерации или воспроизведении аудио.", ephemeral=True)
-                    sr_logger.error(f"TTS ошибка: {e}")
+                    sr_logger.error(f"TTS error: {e}")
                     return
                 await interaction.followup.send(f"Я сказал: `{text}`", ephemeral=True)
                 sr_logger.info(f"Бот произнес фразу '{text}' в голосовом канале {self.voice_client.channel} по запросу пользователя {interaction.user.display_name}")
@@ -265,4 +271,3 @@ async def setup(bot: commands.Bot):
     await cog._init_TTS()
     await cog._init_STT()
     logger.info ("STT и TTS модели инициализированы.")
-
