@@ -41,9 +41,9 @@ COG_MODULES = ["commands",
                "soundboard"]
 
 DEFAULT_ACTIVITY = "Следит за Мерчером 👀"
-GAME_ACTIVITY = "тест боевого модуля CSM-101💣"
+GAME_ACTIVITY = "Играет в тест боевого модуля CSM-101💣"
 MAINTENANCE_ACTIVITY = "🛠️В процессе технического апгрейда🛠️"
-LISTEN_ACTIVITY = "пульс цивилизации🎧"
+LISTEN_ACTIVITY = "Слушает пульс цивилизации🎧"
 
 MERCHER_PHRASES = [
     "Mercher — человек-загадка. Загадка, которую никто не хочет разгадывать.",

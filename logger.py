@@ -26,3 +26,4 @@ def startLogging(name: str = "default", level = logging.DEBUG, filename: str = "
 
 logger = startLogging("Discord Bot", level=logging.DEBUG, filename=MAIN_LOG_FILE, CLI=True)
 sr_logger = startLogging("Speech Recognition", level=logging.DEBUG, filename=VOICE_LOG_FILE)
+logging.getLogger("discord.ext.voice_recv.reader").setLevel(logging.WARNING)

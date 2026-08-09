@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import whisper
 from discord.ext import voice_recv
+from discord.ext.voice_recv.extras.speechrecognition import SpeechRecognitionSink
 from logger import logger, sr_logger
 from globals import WHISPER_MODELS_DIRECTORY, TTS_MODEL_DIR, TTS_CONFIG_PATH, TTS_LATENTS_PATH, TEMP_DIR
 import os
@@ -18,7 +19,6 @@ from tts_processor import TTS_Processor
 from typing import Any
 import re
 
-TARGET_WORDS = ["mercher", "мерчер", "ты меня слышишь?"]
 class Backend(Enum):
     MACOS = auto()
     CUDA = auto()
@@ -101,28 +101,37 @@ class Voice(commands.Cog):
     
     async def _async_whisper_process_callback(self, _recognizer, audio, user):
         raw_data = audio.get_raw_data()
-        if len(raw_data) < 4000:
-                #sr_logger.debug("Ignoring very short audio sequence.")
-                return None
+        duration = len(raw_data) / (audio.sample_rate * audio.sample_width)
+
+        if duration < 0.25:
+            sr_logger.debug(
+                "Ignoring short audio: %.2fs (%d bytes)",
+                duration,
+                len(raw_data)
+            )
+            return None
         result = None
         start_time = time.time()
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, dir=TEMP_DIR) as temp_audio:
             temp_audio.write(audio.get_wav_data())
             temp_audio.flush()
             temp_path = temp_audio.name
+
+        
         try:
+            whisper_processor.pad_wav_to_min_duration(temp_path, 1.5)
             if self.device == Backend.MACOS:
                 result = await self.loop.run_in_executor (
                     self.stt_executor,
                     whisper_processor.process_audio,
-                    temp_audio.name,
+                    temp_path,
                     "small")
             else:
                 def transcribe ():
                     return self.STT.transcribe(temp_path,
-                                                temperature=[0.0, 0.1, 0.2],
-                                                no_speech_threshold=0.8,
-                                                logprob_threshold=-1.2,
+                                                temperature=[0.0],
+                                                no_speech_threshold=0.6,
+                                                logprob_threshold=-1.0,
                                                 word_timestamps=False,
                                                 hallucination_silence_threshold=True,
                                                 **self.STT_decode_options)
@@ -132,12 +141,12 @@ class Voice(commands.Cog):
                     transcribe)
                 result = result["text"]
         except Exception as e:
-            os.remove(temp_path)
             sr_logger.error (f"STT Error: {e}")
             return None
         
         finally:
-            os.remove(temp_path)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
             elapsed = time.time() - start_time
             duration_seconds = len(raw_data) / (audio.sample_rate * audio.sample_width)
             backend = ""
@@ -150,7 +159,7 @@ class Voice(commands.Cog):
                 model_name = "OpenAI Whisper"
 
             sr_logger.info(f"Processed audio data: size={len(raw_data)/1024:.2f} KB, duration≈{duration_seconds:.2f}s, elapsed={elapsed}s, backend={backend}, model={model_name}")
-            return result
+        return result
             #print(result["segments"])   
 
     async def _response (self, text=str):
@@ -174,6 +183,61 @@ class Voice(commands.Cog):
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
 
+    ### Тестовая функция для воспроизведения речи в голосовом канале
+
+    async def _speak(self, text: str):
+        if not self.voice_client or not self.voice_client.is_connected():
+            sr_logger.warning("Невозможно воспроизвести речь: бот не подключен к голосовому каналу.")
+            return
+
+        temp_path = None
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                suffix=".wav",
+                delete=False,
+                dir=TEMP_DIR
+            ) as tmp:
+                temp_path = tmp.name
+
+            # Генерация TTS
+            await self.loop.run_in_executor(
+                self.tts_executor,
+                self.TTS.proccess_TTS,
+                text,
+                temp_path
+            )
+
+            # Если бот уже что-то говорит — останавливаем
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+
+            audio = discord.FFmpegPCMAudio(temp_path)
+            self.voice_client.play(audio)
+
+            sr_logger.info(
+                f"Бот произнес фразу '{text}' "
+                f"в голосовом канале {self.voice_client.channel}"
+            )
+
+            print(
+                f"🤖 Бот произнес фразу '{text}' "
+                f"в голосовом канале {self.voice_client.channel}"
+            )
+
+            # Ждём окончания воспроизведения
+            while self.voice_client.is_playing():
+                await asyncio.sleep(0.1)
+
+        except Exception as e:
+            sr_logger.error(f"TTS error: {e}")
+
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    ####
+
     @discord.app_commands.command(name="join", description="Подключить бота к голосовому каналу")
     @discord.app_commands.describe(channel="Выберите голосовой канал", listen="Включение/выключение системы распознавания речи")
     async def join(self, interaction: discord.Interaction, channel: discord.VoiceChannel, listen: bool = False):
@@ -187,10 +251,23 @@ class Voice(commands.Cog):
             self.transcripts.append ({"user":user.display_name, "text": text})
             print(f"🗣 {user.display_name}({user.id}): {text}")
             await interaction.edit_original_response(content=self._speech_tracing())
-            '''pattern = r"(Бот|Мерчер|Вот),?\s*дай\s+зву[ка]"
-                if re.search(pattern=pattern, string=result, flags=re.IGNORECASE):
-                    print ("smth")
-                    await self.response("Мерчер, пошел в пизду")'''
+
+            #### Тестовый фрагмент для проверки распознавания ключевых слов и генерации ответа через TTS
+
+            normalized_text = text.lower().strip()
+
+            if normalized_text == "привет!":
+                await self._speak("Привет!")
+
+            elif normalized_text == "как твои дела?":
+                await self._speak("У меня всё отлично!")
+
+            elif normalized_text == "да!":
+                await self._speak("Ты сказал да.")
+
+            elif normalized_text == "нет.":
+                await self._speak("Ты сказал нет.")
+            ###
 
 
         """            r.pause_threshold = 2.0
@@ -198,7 +275,7 @@ class Voice(commands.Cog):
             r.non_speaking_duration = 0.3
             r.energy_threshold = 300
             r.dynamic_energy_threshold = True"""
-        voice_sink = voice_recv.extras.SpeechRecognitionSink(process_cb=self._whisper_process_callback, 
+        voice_sink = SpeechRecognitionSink(process_cb=self._whisper_process_callback, 
                                                             default_recognizer='whisper',
                                                             phrase_time_limit=11,
                                                             text_cb=lambda user, text: asyncio.run_coroutine_threadsafe(

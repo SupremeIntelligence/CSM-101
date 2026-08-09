@@ -2,8 +2,33 @@ import subprocess
 import sys
 import os
 from globals import WHISPER_MODELS_DIRECTORY
+import wave
 
 #Whisper.cpp processor (ANE CoreML, Metal)
+
+def pad_wav_to_min_duration(wav_file, min_duration=1.2):
+    with wave.open(wav_file, "rb") as wf:
+        params = wf.getparams()
+        frames = wf.readframes(wf.getnframes())
+
+    current_duration = params.nframes / params.framerate
+    if current_duration >= min_duration:
+        return wav_file
+
+    target_frames = int(min_duration * params.framerate)
+    current_frames = params.nframes
+
+    silence_frames = target_frames - current_frames
+
+    silence = b"\x00" * silence_frames * params.nchannels * params.sampwidth
+
+    with wave.open(wav_file, "wb") as wf:
+        wf.setparams(params)
+        wf.writeframes(frames + silence)
+
+    #print(f"WAV padded: {current_duration:.3f}s -> {min_duration:.3f}s")
+
+    return wav_file
 
 def process_audio(wav_file, model_name="base.en"):
     """
@@ -23,8 +48,17 @@ def process_audio(wav_file, model_name="base.en"):
     if not os.path.exists(wav_file):
         raise FileNotFoundError(f"WAV file not found: {wav_file}")
     lang = "ru"
-    full_command = rf'"{WHISPER_MODELS_DIRECTORY}/whisper.cpp/build/bin/whisper-cli" -m "{model}" -f "{wav_file}" -l {lang} -np -nt -tp 0.1 -t 4'
-
+    full_command = rf'"{WHISPER_MODELS_DIRECTORY}/whisper.cpp/build/bin/whisper-cli" \
+-m "{model}" \
+-f "{wav_file}" \
+-l {lang} \
+-np \
+-nt \
+-tp 0 \
+-t 4 \
+--max-context 0 \
+-nth 0.60 '
+    
     # Execute the command
     process = subprocess.Popen(full_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
